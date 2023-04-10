@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 import java.awt.Desktop;
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.net.URISyntaxException;
  * @version 1.0.0
  */
 @SpringBootApplication
+@EnableAsync
 public class CscserverApplication {
 
     /**

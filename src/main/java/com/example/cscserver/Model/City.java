@@ -44,6 +44,38 @@ public class City {
     private String foundingDate;
 
     /**
+     * Gets the name of the city.
+     * @return the name of the city.
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * Gets the state this city belongs too.
+     * @return the state the city is in.
+     */
+    public String getState() {
+        return state;
+    }
+
+    /**
+     * Gets the country this city belongs too.
+     * @return the country the city is in.
+     */
+    public String getCountry() {
+        return country;
+    }
+
+    /**
+     * The date this city was founded in.
+     * @return the date the city was founded in.
+     */
+    public String getFoundingDate() {
+        return foundingDate;
+    }
+
+    /**
      * Determined whether an entered date is valid or not.
      * @return true if the date is in the present or the past.
      */
@@ -59,5 +91,11 @@ public class City {
             isValid = false;
         }
         return isValid;
+    }
+
+    //TODO: Strings should have double quotes around them in JSON.
+    @Override
+    public String toString() {
+        return "{\nname: " + getName() + "\ndateFounded: " + getFoundingDate() + "\n}";
     }
 }

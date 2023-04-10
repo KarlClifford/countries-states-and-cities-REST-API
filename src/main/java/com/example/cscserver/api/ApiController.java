@@ -1,5 +1,6 @@
 package com.example.cscserver.api;
 
+import com.example.cscserver.Data.DataService;
 import com.example.cscserver.Model.City;
 import com.example.cscserver.Model.ErrorMessage;
 import com.google.gson.Gson;
@@ -17,17 +18,25 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.inject.Singleton;
 
 import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
 
 /**
  * The controller for the API which handles requests from the client.
  * @author Karl Clifford
  * @version 1.0.0
  */
+@Singleton
 @RestController
 @RequestMapping("/api/v1")
 public class ApiController {
+
+    /**
+     * The service that handles CRUD operations on the server data.
+     */
+    DataService data = new DataService();
 
     /**
      * Handles server logs.
@@ -82,7 +91,15 @@ public class ApiController {
             return new ResponseEntity<>(errorMessage.toJson(), HttpStatus.BAD_REQUEST);
         }
 
-        return ResponseEntity.ok("done");
+        // Try to add the city.
+        ResponseEntity<?> response;
+        try {
+            response = data.storeCity(city).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+
+        return response;
     }
 
     /**
