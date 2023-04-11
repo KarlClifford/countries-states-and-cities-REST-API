@@ -1,13 +1,17 @@
 package com.example.cscserver.Data;
 
+import com.example.cscserver.Model.BasicCity;
 import com.example.cscserver.Model.City;
+import com.example.cscserver.configuration.CityComparator;
+import com.google.gson.Gson;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -21,14 +25,14 @@ public class DataService {
     /**
      * Stores country, state and cities.
      */
-    private HashMap<String, HashMap<String, ArrayList<City>>> data = new HashMap<>();
+    private HashMap<String, HashMap<String, ArrayList<BasicCity>>> data = new HashMap<>();
 
     private boolean writing = false;
     private boolean deleting = false;
 
     /**
      * Stores a new city.
-     * @return the appropriate http response //TODO improve wording.
+     * @return the appropriate http response. //TODO improve wording.
      * @throws InterruptedException when the server is interrupted.
      */
     @Async
@@ -58,7 +62,7 @@ public class DataService {
             }
 
             // Add the city.
-            data.get(city.getCountry()).get(city.getState()).add(city);
+            data.get(city.getCountry()).get(city.getState()).add(new BasicCity(city.getName(), city.getFoundingDate()));
 
             // Wake up waiting threads.
             writing = false;
@@ -78,7 +82,7 @@ public class DataService {
     /**
      * Deletes a stored city
      * @param city the city to delete.
-     * @returnthe appropriate http response //TODO improve wording.
+     * @return the appropriate http response. //TODO improve wording.
      * @throws InterruptedException InterruptedException when the server is interrupted.
      */
     @Async
@@ -95,7 +99,8 @@ public class DataService {
             }
             // The city exits, remove it.
             deleting = true;
-            data.get(city.getCountry()).get(city.getState()).remove(city);
+            data.get(city.getCountry()).get(city.getState()).remove(
+                    new BasicCity(city.getName(), city.getFoundingDate()));
             // Check that we still have some states in this country.
             if (data.get(city.getCountry()).get(city.getState()).isEmpty()) {
                 // State is empty, delete the state.
@@ -113,6 +118,105 @@ public class DataService {
 
             // The data was deleted successfully, return success response.
             responseEntity = new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+
+        return CompletableFuture.completedFuture(responseEntity);
+    }
+
+    @Async
+    public synchronized CompletableFuture<ResponseEntity<?>> getCities(String country, String state, String date) {
+        ResponseEntity<?> responseEntity =
+                new ResponseEntity<>(HttpStatus.NO_CONTENT);
+
+        PriorityQueue<City> cityData = new PriorityQueue<>(new CityComparator());
+
+        if (country == null && state == null) {
+            // Get the dataset attached to each country.
+            for (Map.Entry<String, HashMap<String, ArrayList<BasicCity>>> countr : data.entrySet()) {
+                // Get the dataset attached to each state.
+                for (Map.Entry<String, ArrayList<BasicCity>> st : countr.getValue().entrySet()) {
+                    // Go through every stored city and add it to the cityData queue, sorted by date.
+                    for (BasicCity city : st.getValue()) {
+                        cityData.add(new City(city.getName(), st.getKey(), countr.getKey(), city.getFoundingDate()));
+                    }
+                }
+            }
+        } else {
+            // Get all cities by country (and state).
+            if (state == null) {
+                // No state so get all the states in this country.
+                for (Map.Entry<String, ArrayList<BasicCity>> stateData : data.get(country).entrySet()) {
+                    // Add all the cities in every state.
+                    for (BasicCity city : stateData.getValue()) {
+                        cityData.add(new City(city.getName(), stateData.getKey(), country, city.getFoundingDate()));
+                    }
+                }
+            } else {
+                // We need to also filter by state, get by country and state.
+                for (BasicCity city : data.get(country).get(state)) {
+                    // Add all cities in the defined state.
+                    cityData.add(new City(city.getName(), state, country, city.getFoundingDate()));
+                }
+            }
+        }
+
+        Gson gson = new Gson();
+        String sortedData;
+
+        if (state == null) {
+            // We need to return the most complex data.
+            ArrayList<City> cities = new ArrayList<>();
+            if (!(date == null)) {
+                // Filter the cities by date.
+                Date maxDate;
+                try {
+                    maxDate = DateFormat.getDateInstance().parse(date);
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+                while (!cityData.isEmpty()) {
+                    // Remove the top city.
+                    City city = cityData.poll();
+                    // Store this cities date.
+                    Date cityDate;
+                    try {
+                        cityDate = DateFormat.getDateInstance().parse(city.getFoundingDate());
+                    } catch (ParseException e) {
+                        throw new RuntimeException(e);
+                    }
+                    // Add all the cities from newest to oldest with dates less the maxDate.
+                    if (cityDate.before(maxDate)) {
+                        cities.add(city);
+                    }
+                }
+            } else {
+                // Don't filter the cities by date.
+                while (!cityData.isEmpty()) {
+                    // Remove the top city.
+                    City city = cityData.poll();
+                    // Add the city.
+                    cities.add(city);
+            }
+        }
+            sortedData = gson.toJson(cities);
+    } else {
+            // We need to simplify our data
+            ArrayList<BasicCity> cities = new ArrayList<>();
+            while (!cityData.isEmpty()) {
+                // Remove the top city.
+                City city = cityData.poll();
+                // Simplify the data.
+                BasicCity simplifiedCity = new BasicCity(city.getName(), city.getFoundingDate());
+                // Add the city.
+                cities.add(simplifiedCity);
+            }
+            sortedData = gson.toJson(cities);
+        }
+
+        // See if we have any data.
+        if (!sortedData.equals("{ }")) {
+            // We have data, send it.
+            responseEntity = new ResponseEntity<>(sortedData, HttpStatus.OK);
         }
 
         return CompletableFuture.completedFuture(responseEntity);
@@ -139,8 +243,8 @@ public class DataService {
             // The country exists, check if the state exists.
             if (data.get(city.getCountry()).containsKey(city.getState())) {
                 // The state exists, check that the city exist.
-                ArrayList<City> citiesInState = data.get(city.getCountry()).get(city.getState());
-                for (City storedCity : citiesInState) {
+                ArrayList<BasicCity> citiesInState = data.get(city.getCountry()).get(city.getState());
+                for (BasicCity storedCity : citiesInState) {
                     if (storedCity.getName().equals(city.getName())) {
                         // The city was found.
                         cityFound = true;

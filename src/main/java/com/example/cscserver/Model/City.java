@@ -43,6 +43,14 @@ public class City {
     @Pattern(regexp = "(0?[1-9]|[12][0-9]|3[01])[- /.](0?[1-9]|1[012])[- /.](19|20)\\d\\d")
     private String foundingDate;
 
+    // TODO: add comment!!!!!!!!
+    public City(String name, String state, String country, String foundingDate) {
+        this.name = name;
+        this.state = state;
+        this.country = country;
+        this.foundingDate = foundingDate;
+    }
+
     /**
      * Gets the name of the city.
      * @return the name of the city.
