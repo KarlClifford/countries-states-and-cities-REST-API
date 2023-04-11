@@ -7,6 +7,7 @@ import com.google.gson.Gson;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,6 +102,7 @@ public class ApiController {
         return response;
     }
 
+    //TODO: Comment.
     @DeleteMapping("/city")
     public ResponseEntity<?> deleteCity(
             @NotBlank @QueryParam(value = "name") String name,
@@ -122,6 +124,45 @@ public class ApiController {
             throw new RuntimeException(e);
         }
 
+        return response;
+    }
+
+    // TODO: comment for methods.
+    @GetMapping("/city")
+    public ResponseEntity<?> getCities(@QueryParam("dateFounded") String date) {
+        // Try to get the cities.
+        ResponseEntity<?> response;
+        try {
+            response = data.getCities(null, null, date).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+
+        return response;
+    }
+
+    @GetMapping("city/{country}")
+    public ResponseEntity<?> getCitiesByCountry(@PathParam("country") String country) {
+        // Try to get the cities.
+        ResponseEntity<?> response;
+        try {
+            response = data.getCities(country, null, null).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+        return response;
+    }
+    @GetMapping("city/{country}/{state}")
+    public ResponseEntity<?> getCitiesByCountry(
+            @PathParam("country") String country,
+            @PathParam("state") String state) {
+        // Try to get the cities.
+        ResponseEntity<?> response;
+        try {
+            response = data.getCities(country, state, null).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
         return response;
     }
 
