@@ -128,7 +128,7 @@ public class DataService {
     @Async
     public synchronized CompletableFuture<ResponseEntity<?>> getCities(String country, String state, String date) {
         ResponseEntity<?> responseEntity =
-                new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
         PriorityQueue<City> cityData = new PriorityQueue<>(new CityComparator());
 
@@ -145,7 +145,7 @@ public class DataService {
             }
         } else {
             // Get all cities by country (and state).
-            if (state == null) {
+            if (state == null && data.containsKey(country)) {
                 // No state so get all the states in this country.
                 for (Map.Entry<String, ArrayList<BasicCity>> stateData : data.get(country).entrySet()) {
                     // Add all the cities in every state.
@@ -155,9 +155,15 @@ public class DataService {
                 }
             } else {
                 // We need to also filter by state, get by country and state.
-                for (BasicCity city : data.get(country).get(state)) {
-                    // Add all cities in the defined state.
-                    cityData.add(new City(city.getName(), state, country, city.getFoundingDate()));
+                if (data.containsKey(country)) {
+                    // Check the state exists in this country.
+                    if (data.get(country).containsKey(state)) {
+                        // The state exists, traverse through them.
+                        for (BasicCity city : data.get(country).get(state)) {
+                            // Add all cities in the defined state.
+                            cityData.add(new City(city.getName(), state, country, city.getFoundingDate()));
+                        }
+                    }
                 }
             }
         }
@@ -165,7 +171,7 @@ public class DataService {
         Gson gson = new Gson();
         String sortedData;
 
-        if (state == null) {
+        if (country == null && state == null) {
             // We need to return the most complex data.
             ArrayList<City> cities = new ArrayList<>();
             if (!(date == null)) {
@@ -217,7 +223,7 @@ public class DataService {
         }
 
         // See if we have any data.
-        if (!sortedData.equals("{ }")) {
+        if (!sortedData.equals("[]")) {
             // We have data, send it.
             responseEntity = new ResponseEntity<>(sortedData, HttpStatus.OK);
         }

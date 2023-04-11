@@ -21,16 +21,11 @@ public class BasicCity {
     /**
      * The date the city was founded in.
      */
-    private final Date foundingDate;
+    private final String foundingDate;
 
     public BasicCity(String name, String foundingDate) {
         this.name = name;
-        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
-        try {
-            this.foundingDate = formatter.parse(foundingDate);
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
+        this.foundingDate = foundingDate;
     }
 
     /**
@@ -46,8 +41,7 @@ public class BasicCity {
      * @return the date the city was founded in.
      */
     public String getFoundingDate() {
-        DateFormat displayFormat = new SimpleDateFormat("dd-MM-yyyy");
-        return displayFormat.format(foundingDate);
+        return foundingDate;
     }
 
     //TODO: Strings should have double quotes around them in JSON.
