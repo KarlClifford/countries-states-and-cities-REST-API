@@ -8,7 +8,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jdk.jfr.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -62,7 +64,7 @@ public class ApiController {
      * @param name the user's name.
      * @return a greeting to the user.
      */
-    @GetMapping("/hello")
+    @GetMapping(value = "/hello", produces = {"text/plain"})
     public String hello(@RequestParam(value = "name", defaultValue = "World") String name) {
         return String.format("Hello %s!", name);
     }
@@ -128,7 +130,7 @@ public class ApiController {
     }
 
     // TODO: comment for methods.
-    @GetMapping("/city")
+    @GetMapping(value = "/city", produces = {"application/json"})
     public ResponseEntity<?> getCities(@QueryParam("dateFounded") String date) {
         // Try to get the cities.
         ResponseEntity<?> response;
@@ -141,7 +143,7 @@ public class ApiController {
         return response;
     }
 
-    @GetMapping("city/{country}")
+    @GetMapping(value = "city/{country}", produces = {"application/json"})
     public ResponseEntity<?> getCitiesByCountry(@PathVariable("country") String country) {
         // Try to get the cities.
         ResponseEntity<?> response;
@@ -152,7 +154,7 @@ public class ApiController {
         }
         return response;
     }
-    @GetMapping("city/{country}/{state}")
+    @GetMapping(value = "city/{country}/{state}", produces = {"application/json"})
     public ResponseEntity<?> getCitiesByCountry(
             @PathVariable("country") String country,
             @PathVariable("state") String state) {
