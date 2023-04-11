@@ -2,7 +2,10 @@ package com.example.cscserver.Model;
 
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 /**
  * Represents a City for storing limited ciy data.
@@ -22,8 +25,9 @@ public class BasicCity {
 
     public BasicCity(String name, String foundingDate) {
         this.name = name;
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
         try {
-            this.foundingDate = DateFormat.getDateInstance().parse(foundingDate);
+            this.foundingDate = formatter.parse(foundingDate);
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
@@ -42,7 +46,8 @@ public class BasicCity {
      * @return the date the city was founded in.
      */
     public String getFoundingDate() {
-        return foundingDate.toString();
+        DateFormat displayFormat = new SimpleDateFormat("dd-MM-yyyy");
+        return displayFormat.format(foundingDate);
     }
 
     //TODO: Strings should have double quotes around them in JSON.

@@ -4,8 +4,10 @@ import com.example.cscserver.Model.City;
 
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.Locale;
 
 public class CityComparator implements Comparator<City> {
 
@@ -14,10 +16,12 @@ public class CityComparator implements Comparator<City> {
         Date date1;
         Date date2;
 
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
+
         // Assign the dates from the city to Date types, so we can compare.
         try {
-            date1 = DateFormat.getDateInstance().parse(o1.getFoundingDate());
-            date2 = DateFormat.getDateInstance().parse(o2.getFoundingDate());
+            date1 = formatter.parse(o1.getFoundingDate());
+            date2 = formatter.parse(o2.getFoundingDate());
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }

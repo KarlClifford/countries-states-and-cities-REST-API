@@ -39,8 +39,8 @@ public class City {
      * The date the city was founded in the format dd-MM-yyyy.
      */
     @JsonProperty("dateFounded")
-    @NotBlank
-    @Pattern(regexp = "(0?[1-9]|[12][0-9]|3[01])[- /.](0?[1-9]|1[012])[- /.](19|20)\\d\\d")
+    //@NotBlank TODO: these lines are causing issues in DataService
+    //@Pattern(regexp = "(0?[1-9]|[12][0-9]|3[01])[- /.](0?[1-9]|1[012])[- /.](19|20)\\d\\d")
     private String foundingDate;
 
     // TODO: add comment!!!!!!!!

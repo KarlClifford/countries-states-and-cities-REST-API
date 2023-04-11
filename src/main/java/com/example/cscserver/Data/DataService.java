@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -169,9 +170,10 @@ public class DataService {
             ArrayList<City> cities = new ArrayList<>();
             if (!(date == null)) {
                 // Filter the cities by date.
+                SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
                 Date maxDate;
                 try {
-                    maxDate = DateFormat.getDateInstance().parse(date);
+                    maxDate = formatter.parse(date);
                 } catch (ParseException e) {
                     throw new RuntimeException(e);
                 }
@@ -181,7 +183,7 @@ public class DataService {
                     // Store this cities date.
                     Date cityDate;
                     try {
-                        cityDate = DateFormat.getDateInstance().parse(city.getFoundingDate());
+                        cityDate = formatter.parse(city.getFoundingDate());
                     } catch (ParseException e) {
                         throw new RuntimeException(e);
                     }
