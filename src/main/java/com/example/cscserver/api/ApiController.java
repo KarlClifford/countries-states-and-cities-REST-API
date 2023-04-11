@@ -142,7 +142,7 @@ public class ApiController {
     }
 
     @GetMapping("city/{country}")
-    public ResponseEntity<?> getCitiesByCountry(@PathParam("country") String country) {
+    public ResponseEntity<?> getCitiesByCountry(@PathVariable("country") String country) {
         // Try to get the cities.
         ResponseEntity<?> response;
         try {
@@ -154,8 +154,8 @@ public class ApiController {
     }
     @GetMapping("city/{country}/{state}")
     public ResponseEntity<?> getCitiesByCountry(
-            @PathParam("country") String country,
-            @PathParam("state") String state) {
+            @PathVariable("country") String country,
+            @PathVariable("state") String state) {
         // Try to get the cities.
         ResponseEntity<?> response;
         try {
