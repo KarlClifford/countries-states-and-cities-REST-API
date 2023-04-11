@@ -6,18 +6,16 @@ import com.example.cscserver.Model.ErrorMessage;
 import com.google.gson.Gson;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.ws.rs.QueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ObjectError;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 import jakarta.inject.Singleton;
 
 import java.util.ArrayList;
@@ -30,6 +28,7 @@ import java.util.concurrent.ExecutionException;
  */
 @Singleton
 @RestController
+@Validated
 @RequestMapping("/api/v1")
 public class ApiController {
 
@@ -95,6 +94,30 @@ public class ApiController {
         ResponseEntity<?> response;
         try {
             response = data.storeCity(city).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+
+        return response;
+    }
+
+    @DeleteMapping("/city")
+    public ResponseEntity<?> deleteCity(
+            @NotBlank @QueryParam(value = "name") String name,
+            @NotBlank @QueryParam(value = "state") String state,
+            @NotBlank @QueryParam(value = "country") String country,
+            Errors errors) {
+
+        // Check we passed the validation step.
+        if (errors.hasErrors()) {
+            // The query parameters were malformed, return an error to the user.
+            return errorResponse(errors);
+        }
+
+        // Try to delete the city.
+        ResponseEntity<?> response;
+        try {
+            response = data.removeCity(name, state, country).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }

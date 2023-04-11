@@ -80,16 +80,17 @@ public class DataService {
     }
 
     /**
-     * Deletes a stored city
-     * @param city the city to delete.
+     * Deletes a stored city //TODO: This comment needs to params added.
      * @return the appropriate http response. //TODO improve wording.
      * @throws InterruptedException InterruptedException when the server is interrupted.
      */
     @Async
-    public synchronized CompletableFuture<ResponseEntity<?>> deleteCity(City city)
+    public synchronized CompletableFuture<ResponseEntity<?>> removeCity(String name, String country, String state) //TODO change to openapi sepc
         throws InterruptedException {
         ResponseEntity<?> responseEntity =
                 new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+        City city = new City(name, state, country, null);
 
         // Check that the city exists.
         if (hasCity(city)) {
