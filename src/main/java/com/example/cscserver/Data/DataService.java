@@ -29,13 +29,12 @@ public class DataService {
     /**
      * Stores a new city.
      * @return the appropriate http response //TODO improve wording.
-     * @throws InterruptedException when the server is interrupted
+     * @throws InterruptedException when the server is interrupted.
      */
     @Async
     public synchronized CompletableFuture<ResponseEntity<?>> storeCity(City city)
             throws InterruptedException {
-        ResponseEntity<?> responseEntity =
-                new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        ResponseEntity<?> responseEntity;
 
         // Check the city doesn't already exist.
         if (!hasCity(city)) {
@@ -77,6 +76,49 @@ public class DataService {
     }
 
     /**
+     * Deletes a stored city
+     * @param city the city to delete.
+     * @returnthe appropriate http response //TODO improve wording.
+     * @throws InterruptedException InterruptedException when the server is interrupted.
+     */
+    @Async
+    public synchronized CompletableFuture<ResponseEntity<?>> deleteCity(City city)
+        throws InterruptedException {
+        ResponseEntity<?> responseEntity =
+                new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+        // Check that the city exists.
+        if (hasCity(city)) {
+            // If another thread is modifying the data, wait.
+            if (writing) {
+                wait();
+            }
+            // The city exits, remove it.
+            deleting = true;
+            data.get(city.getCountry()).get(city.getState()).remove(city);
+            // Check that we still have some states in this country.
+            if (data.get(city.getCountry()).get(city.getState()).isEmpty()) {
+                // State is empty, delete the state.
+                data.get(city.getCountry()).remove(city.getState());
+                // Check that the country still has some states in it.
+                if (data.get(city.getCountry()).isEmpty()) {
+                    // Country contains no states, remove the country.
+                    data.remove(city.getCountry());
+                }
+            }
+
+            // Release the lock.
+            deleting = false;
+            notifyAll();
+
+            // The data was deleted successfully, return success response.
+            responseEntity = new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+
+        return CompletableFuture.completedFuture(responseEntity);
+    }
+
+    /**
      * Checks if this city already exists on the server.
      * @param city the city we want to find.
      * @return true if the city exists.
@@ -109,24 +151,5 @@ public class DataService {
         }
 
         return cityFound;
-    }
-
-    @Async
-    public synchronized CompletableFuture<ResponseEntity<?>> deleteCity()
-            throws InterruptedException {
-        ResponseEntity<?> responseEntity;
-
-        if (writing) {
-            wait();
-        }
-
-        deleting = true;
-
-        // End modification
-        deleting = false;
-        notifyAll();
-
-        responseEntity = ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(null);
-        return CompletableFuture.completedFuture(responseEntity);
     }
 }
