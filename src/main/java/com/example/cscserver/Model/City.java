@@ -40,10 +40,17 @@ public class City {
      */
     @JsonProperty("foundingDate")
     @NotBlank(message = "date founded is required")
-    @Pattern(regexp = "(0?[1-9]|[12][0-9]|3[01])[- /.](0?[1-9]|1[012])[- /.](1\\d{3}|2[01]\\d\\d)", message = "date must match pattern dd-MM-yyyy")
+    @Pattern(regexp = "(0?[1-9]|[12][0-9]|3[01])[- /.](0?[1-9]|1[012])[- /.](1\\d{3}|2[01]\\d\\d)",
+            message = "date must match pattern dd-MM-yyyy")
     private String foundingDate;
 
-    // TODO: add comment!!!!!!!!
+    /**
+     * The constructor of the City class.
+     * @param name the name of the city.
+     * @param state the state this city is in.
+     * @param country the country the state is in.
+     * @param foundingDate the date the city was founded.
+     */
     public City(String name, String state, String country, String foundingDate) {
         this.name = name;
         this.state = state;
@@ -88,7 +95,7 @@ public class City {
      * @return true if the date is in the present or the past.
      */
     public boolean isDateValid() {
-        // Setup a date formatter so we can convert the string representation to an actual Date object.
+        // Set up a date formatter, so we can convert the string representation to an actual Date object.
         SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
         boolean isValid;
         try {
@@ -99,11 +106,5 @@ public class City {
             isValid = false;
         }
         return isValid;
-    }
-
-    //TODO: Strings should have double quotes around them in JSON.
-    @Override
-    public String toString() {
-        return "{\nname: " + getName() + "\ndateFounded: " + getFoundingDate() + "\n}";
     }
 }
