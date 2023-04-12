@@ -3,23 +3,22 @@ package com.example.cscserver.api;
 import com.example.cscserver.Data.DataService;
 import com.example.cscserver.Model.City;
 import com.example.cscserver.Model.ErrorMessage;
+import com.example.cscserver.configuration.ErrorWrapper;
 import com.google.gson.Gson;
+import jakarta.inject.Singleton;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import jdk.jfr.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.Errors;
-import org.springframework.validation.ObjectError;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import jakarta.inject.Singleton;
 
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
@@ -79,11 +78,6 @@ public class ApiController {
      */
     @PostMapping(value = "/city", consumes = {"application/json"})
     public ResponseEntity<?> addCity(@Valid @RequestBody City city, Errors errors) {
-        // Check we passed the validation step.
-        if (errors.hasErrors()) {
-            // The JSON was malformed, return an error to the user.
-            return errorResponse(errors);
-        }
 
         // Check the date the user has entered is valid.
         if (!city.isDateValid()) {
@@ -107,16 +101,12 @@ public class ApiController {
     //TODO: Comment.
     @DeleteMapping("/city")
     public ResponseEntity<?> deleteCity(
-            @NotBlank @QueryParam(value = "name") String name,
-            @NotBlank @QueryParam(value = "state") String state,
-            @NotBlank @QueryParam(value = "country") String country,
-            Errors errors) {
+            @Valid @NotBlank(message = "name must not be blank") @QueryParam("name") String name,
+            @Valid @NotBlank(message = "state must not be blank") @QueryParam("state") String state,
+            @Valid @NotBlank(message = "country must not be blank") @QueryParam("country") String country) {
 
         // Check we passed the validation step.
-        if (errors.hasErrors()) {
-            // The query parameters were malformed, return an error to the user.
-            return errorResponse(errors);
-        }
+
 
         // Try to delete the city.
         ResponseEntity<?> response;
@@ -170,17 +160,20 @@ public class ApiController {
 
     /**
      * Builds json objects containing errors thrown by the server.
-     * @param errors the errors that were caught.
+     * @param ex the constraint violations from the server.
      * @return a 400 error response.
      */
-    private static ResponseEntity<String> errorResponse(Errors errors) {
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<?> handleConstraintViolationException(ConstraintViolationException ex) {
         ArrayList<ErrorMessage> errorMessages = new ArrayList<>();
+
         // Iterate through every error and save the message.
-        for (ObjectError error : errors.getAllErrors()) {
-            errorMessages.add(new ErrorMessage(HttpStatus.BAD_REQUEST.value(), error.getDefaultMessage()));
+        for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
+            errorMessages.add(new ErrorMessage(HttpStatus.BAD_REQUEST.value(), violation.getMessage()));
         }
 
         Gson gson = new Gson();
-        return new ResponseEntity<>(gson.toJson(errorMessages), HttpStatus.BAD_REQUEST);
+        return ResponseEntity.badRequest().body(gson.toJson(new ErrorWrapper(errorMessages)));
     }
 }
