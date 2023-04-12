@@ -12,7 +12,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 /**
- * The router of the application.
+ * The root of the application.
  * @author Karl Clifford
  * @version 1.0.0
  */
@@ -31,7 +31,11 @@ public class CscserverApplication {
      */
     private static final String DOCS_URI = "http://localhost:8080/docs.html";
 
-	public static void main(String[] args) {
+    /**
+     * The main method that starts the server.
+     * @param args arguments passed in at runtime.
+     */
+    public static void main(String[] args) {
         // Check that this device has support for a web browser.
         if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
             // This device supports web browsers, open the developer docs.
@@ -43,7 +47,7 @@ public class CscserverApplication {
             }
         }
         // Start the server.
-		SpringApplication.run(CscserverApplication.class, args);
-	}
+        SpringApplication.run(CscserverApplication.class, args);
+    }
 
 }
