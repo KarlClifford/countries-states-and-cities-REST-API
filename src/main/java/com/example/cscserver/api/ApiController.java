@@ -6,7 +6,6 @@ import com.example.cscserver.Model.ErrorMessage;
 import com.example.cscserver.configuration.ErrorWrapper;
 import com.google.gson.Gson;
 import jakarta.inject.Singleton;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
@@ -16,9 +15,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.Errors;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
@@ -35,28 +42,15 @@ import java.util.concurrent.ExecutionException;
 public class ApiController {
 
     /**
-     * The service that handles CRUD operations on the server data.
-     */
-    DataService data = new DataService();
-
-    /**
      * Handles server logs.
      */
     private static final Logger LOG =
             LoggerFactory.getLogger(ApiController.class);
 
     /**
-     * Handles storing requests from the client.
+     * The service that handles CRUD operations on the server data.
      */
-    private final HttpServletRequest request;
-
-    /**
-     * The constructor of the API.
-     * @param request the request made from the client.
-     */
-    public ApiController(HttpServletRequest request) {
-        this.request = request;
-    }
+    private final DataService data = new DataService();
 
     /**
      * Just a simple query to check the service is running.
@@ -71,13 +65,11 @@ public class ApiController {
     /**
      * The addCity method, verifies and adds a city to the server.
      * @param city the city to add.
-     * @param errors errors caught during validation.
      * @return response code 201/202 if successful, 400 due to bad JSON formatting,
      * 409 if the city already exists and 500 if there was a server error.
-     *
      */
     @PostMapping(value = "/city", consumes = {"application/json"})
-    public ResponseEntity<?> addCity(@Valid @RequestBody City city, Errors errors) {
+    public ResponseEntity<?> addCity(@Valid @RequestBody City city) {
 
         // Check the date the user has entered is valid.
         if (!city.isDateValid()) {
@@ -88,72 +80,92 @@ public class ApiController {
         }
 
         // Try to add the city.
-        ResponseEntity<?> response;
+        ResponseEntity<?> response = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         try {
             response = data.storeCity(city).get();
         } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+            LOG.error("Error adding city " + city.getName() + ": " + e);
         }
 
         return response;
     }
 
-    //TODO: Comment.
+    /**
+     * The deleteCity method deletes a user defined city from the server.
+     * @param name the name of the city to target.
+     * @param state the state of the city to target.
+     * @param country the country of the city to target.
+     * @return response code 204 if success or 404 if the city doesn't exist.
+     */
     @DeleteMapping("/city")
     public ResponseEntity<?> deleteCity(
             @Valid @NotBlank(message = "name must not be blank") @QueryParam("name") String name,
             @Valid @NotBlank(message = "state must not be blank") @QueryParam("state") String state,
             @Valid @NotBlank(message = "country must not be blank") @QueryParam("country") String country) {
 
-        // Check we passed the validation step.
-
-
         // Try to delete the city.
-        ResponseEntity<?> response;
+        ResponseEntity<?> response = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         try {
             response = data.removeCity(name, state, country).get();
         } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+            LOG.error("Error deleting the city " + name + ": " + e);
         }
 
         return response;
     }
 
-    // TODO: comment for methods.
+    /**
+     * Gets all the cities stored on the server.
+     * @param date (optional) maximum date to filter the cities by.
+     * @return response code 200 if success with JSON city data or 404 if no cities exist.
+     */
     @GetMapping(value = "/city", produces = {"application/json"})
     public ResponseEntity<?> getCities(@QueryParam("dateFounded") String date) {
         // Try to get the cities.
-        ResponseEntity<?> response;
+        ResponseEntity<?> response = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         try {
             response = data.getCities(null, null, date).get();
         } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+            LOG.error("Error getting all cities: " + e);
         }
 
         return response;
     }
 
+    /**
+     * Gets all the cities stored on the server, filtered by country.
+     * @param country the country to target.
+     * @return response code 200 if success with JSON city data or 404 if no cities exist.
+     */
     @GetMapping(value = "city/{country}", produces = {"application/json"})
     public ResponseEntity<?> getCitiesByCountry(@PathVariable("country") String country) {
         // Try to get the cities.
-        ResponseEntity<?> response;
+        ResponseEntity<?> response = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         try {
             response = data.getCities(country, null, null).get();
         } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+            LOG.error("Error getting cities in country: " + country + e);
         }
         return response;
     }
+
+    /**
+     * Gets all the cities stored on the server, filtered by country and state.
+     * @param country the country to target.
+     * @param state the state to target.
+     * @return response code 200 if success with JSON city data or 404 if no cities exist.
+     */
     @GetMapping(value = "city/{country}/{state}", produces = {"application/json"})
     public ResponseEntity<?> getCitiesByCountry(
             @PathVariable("country") String country,
             @PathVariable("state") String state) {
+
         // Try to get the cities.
-        ResponseEntity<?> response;
+        ResponseEntity<?> response = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         try {
             response = data.getCities(country, state, null).get();
         } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+            LOG.error("Error getting cities in country: " + country + " and state: " + state + e);
         }
         return response;
     }
@@ -161,7 +173,7 @@ public class ApiController {
     /**
      * Builds json objects containing errors thrown by the server.
      * @param ex the constraint violations from the server.
-     * @return a 400 error response.
+     * @return 400 error response.
      */
     @ExceptionHandler(ConstraintViolationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
