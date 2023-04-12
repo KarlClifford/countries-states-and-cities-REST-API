@@ -38,9 +38,9 @@ public class City {
     /**
      * The date the city was founded in the format dd-MM-yyyy.
      */
-    @JsonProperty("dateFounded")
-    @NotBlank
-    @Pattern(regexp = "(0?[1-9]|[12][0-9]|3[01])[- /.](0?[1-9]|1[012])[- /.](1\\d{3}|2[01]\\d\\d)")
+    @JsonProperty("foundingDate")
+    @NotBlank(message = "date founded is required")
+    @Pattern(regexp = "(0?[1-9]|[12][0-9]|3[01])[- /.](0?[1-9]|1[012])[- /.](1\\d{3}|2[01]\\d\\d)", message = "date must match pattern dd-MM-yyyy")
     private String foundingDate;
 
     // TODO: add comment!!!!!!!!
