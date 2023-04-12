@@ -87,7 +87,7 @@ public class DataService {
      * @throws InterruptedException InterruptedException when the server is interrupted.
      */
     @Async
-    public synchronized CompletableFuture<ResponseEntity<?>> removeCity(String name, String country, String state) //TODO change to openapi sepc
+    public synchronized CompletableFuture<ResponseEntity<?>> removeCity(String name, String state, String country) //TODO change to openapi sepc
         throws InterruptedException {
         ResponseEntity<?> responseEntity =
                 new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -102,8 +102,15 @@ public class DataService {
             }
             // The city exits, remove it.
             deleting = true;
-            data.get(city.getCountry()).get(city.getState()).remove(
-                    new BasicCity(city.getName(), city.getFoundingDate()));
+
+            // Try and find the city in the state.
+            for (Iterator<BasicCity> iterator = data.get(city.getCountry()).get(city.getState()).iterator(); iterator.hasNext();) {
+                BasicCity myCity = iterator.next();
+                if (myCity.getName().equals(city.getName())) {
+                    // We found the city so remove it.
+                    iterator.remove();
+                }
+            }
             // Check that we still have some states in this country.
             if (data.get(city.getCountry()).get(city.getState()).isEmpty()) {
                 // State is empty, delete the state.
@@ -224,7 +231,7 @@ public class DataService {
         }
 
         // See if we have any data.
-        if (!sortedData.equals("[]")) {
+        if (!sortedData.equals("{\"cities\":[]}")) {
             // We have data, send it.
             responseEntity = new ResponseEntity<>(sortedData, HttpStatus.OK);
         }
