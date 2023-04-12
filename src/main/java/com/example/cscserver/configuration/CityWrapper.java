@@ -3,7 +3,7 @@ package com.example.cscserver.configuration;
 import java.util.ArrayList;
 
 /**
- * A wrapper class used to wrap cities objects before json serialisation.
+ * A wrapper class used to wrap City objects before json serialisation.
  * @author Karl Clifford
  * @version 1.0.0
  */
