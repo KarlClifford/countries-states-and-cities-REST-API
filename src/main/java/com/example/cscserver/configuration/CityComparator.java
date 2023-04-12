@@ -1,6 +1,9 @@
 package com.example.cscserver.configuration;
 
 import com.example.cscserver.Model.City;
+import com.example.cscserver.api.ApiController;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -13,6 +16,11 @@ import java.util.Date;
  * @version 1.0.0
  */
 public class CityComparator implements Comparator<City> {
+    /**
+     * Handles server logs.
+     */
+    private static final Logger LOG =
+            LoggerFactory.getLogger(ApiController.class);
 
     /**
      * Compares one city to another.
@@ -22,8 +30,8 @@ public class CityComparator implements Comparator<City> {
      */
     @Override
     public int compare(City o1, City o2) {
-        Date date1;
-        Date date2;
+        Date date1 = new Date();
+        Date date2 = new Date();
 
         SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
 
@@ -32,7 +40,7 @@ public class CityComparator implements Comparator<City> {
             date1 = formatter.parse(o1.getFoundingDate());
             date2 = formatter.parse(o2.getFoundingDate());
         } catch (ParseException e) {
-            throw new RuntimeException(e);
+            LOG.error("Error comparing dates: " + e);
         }
 
         int comparatorValue;
