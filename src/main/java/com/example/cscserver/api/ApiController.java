@@ -65,7 +65,7 @@ public class ApiController {
     /**
      * The addCity method, verifies and adds a city to the server.
      * @param city the city to add.
-     * @return response code 201/202 if successful, 400 due to bad JSON formatting,
+     * @return response code 204 if successful, 400 due to bad JSON formatting,
      * 409 if the city already exists and 500 if there was a server error.
      */
     @PostMapping(value = "/city", consumes = {"application/json"})
@@ -95,7 +95,7 @@ public class ApiController {
      * @param name the name of the city to target.
      * @param state the state of the city to target.
      * @param country the country of the city to target.
-     * @return response code 204 if success or 404 if the city doesn't exist.
+     * @return response code 204 if success, 409 due to bad formatting or 404 if the city doesn't exist.
      */
     @DeleteMapping("/city")
     public ResponseEntity<?> deleteCity(
