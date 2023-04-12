@@ -5,6 +5,8 @@ import com.example.cscserver.Model.City;
 import com.example.cscserver.configuration.CityComparator;
 import com.example.cscserver.configuration.CityWrapper;
 import com.google.gson.Gson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -14,7 +16,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.PriorityQueue;
 import java.util.Map;
 import java.util.Date;
@@ -29,9 +30,15 @@ import java.util.concurrent.CompletableFuture;
 public class DataService {
 
     /**
+     * Handles server logs.
+     */
+    private static final Logger LOG =
+            LoggerFactory.getLogger(DataService.class);
+
+    /**
      * Stores country, states and cities.
      */
-    private HashMap<String, HashMap<String, ArrayList<BasicCity>>> data = new HashMap<>();
+    private final HashMap<String, HashMap<String, ArrayList<BasicCity>>> data = new HashMap<>();
 
     /**
      * Whether data is being written.
@@ -119,14 +126,9 @@ public class DataService {
             deleting = true;
 
             // Try and find the city in the state.
-            for (Iterator<BasicCity> iterator = data.get(city.getCountry())
-                    .get(city.getState()).iterator(); iterator.hasNext();) {
-                BasicCity myCity = iterator.next();
-                if (myCity.getName().equals(city.getName())) {
-                    // We found the city so remove it.
-                    iterator.remove();
-                }
-            }
+            // We found the city so remove it.
+            data.get(city.getCountry())
+                    .get(city.getState()).removeIf(myCity -> myCity.getName().equals(city.getName()));
             // Check that we still have some states in this country.
             if (data.get(city.getCountry()).get(city.getState()).isEmpty()) {
                 // State is empty, delete the state.
@@ -210,22 +212,22 @@ public class DataService {
             if (!(date == null)) {
                 // We need to filter the cities by date.
                 SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
-                Date maxDate;
+                Date maxDate = new Date();
                 try {
                     maxDate = formatter.parse(date);
                 } catch (ParseException e) {
-                    throw new RuntimeException(e);
+                    LOG.error("Date couldn't be parsed: " + e);
                 }
                 // Search through all the cities we collected.
                 while (!cityData.isEmpty()) {
                     // Remove the top city.
                     City city = cityData.poll();
                     // Store this cities date.
-                    Date cityDate;
+                    Date cityDate = new Date();
                     try {
                         cityDate = formatter.parse(city.getFoundingDate());
                     } catch (ParseException e) {
-                        throw new RuntimeException(e);
+                        LOG.error("Date couldn't be parsed: " + e);
                     }
                     // Add all the cities from newest to oldest with dates less the maxDate.
                     if (cityDate.before(maxDate)) {
