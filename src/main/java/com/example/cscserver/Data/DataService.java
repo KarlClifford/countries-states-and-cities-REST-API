@@ -10,10 +10,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.PriorityQueue;
+import java.util.Map;
+import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -25,17 +29,24 @@ import java.util.concurrent.CompletableFuture;
 public class DataService {
 
     /**
-     * Stores country, state and cities.
+     * Stores country, states and cities.
      */
     private HashMap<String, HashMap<String, ArrayList<BasicCity>>> data = new HashMap<>();
 
+    /**
+     * Whether data is being written.
+     */
     private boolean writing = false;
+    /**
+     * Whether data is being deleted.
+     */
     private boolean deleting = false;
 
     /**
      * Stores a new city.
-     * @return the appropriate http response. //TODO improve wording.
-     * @throws InterruptedException when the server is interrupted.
+     * @param city the city to store.
+     * @return response code 204 if success, 409 due to bad formatting or 404 if the city doesn't exist.
+     * @throws InterruptedException if the operation is cancelled.
      */
     @Async
     public synchronized CompletableFuture<ResponseEntity<?>> storeCity(City city)
@@ -45,7 +56,7 @@ public class DataService {
         // Check the city doesn't already exist.
         if (!hasCity(city)) {
             // If another thread is modifying the data, wait.
-            if (deleting) {
+            while (deleting) {
                 wait();
             }
 
@@ -70,6 +81,7 @@ public class DataService {
             writing = false;
             notifyAll();
 
+            // Inform the user the operation was successful.
             responseEntity = ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
 
 
@@ -82,12 +94,15 @@ public class DataService {
     }
 
     /**
-     * Deletes a stored city //TODO: This comment needs to params added.
-     * @return the appropriate http response. //TODO improve wording.
-     * @throws InterruptedException InterruptedException when the server is interrupted.
+     * Deletes a stored city.
+     * @param name the name of the city to target.
+     * @param state the name of the state to target.
+     * @param country the name of the country to target.
+     * @return response code 204 if success or 404 if the city doesn't exist.
+     * @throws InterruptedException if the operation is cancelled.
      */
     @Async
-    public synchronized CompletableFuture<ResponseEntity<?>> removeCity(String name, String state, String country) //TODO change to openapi sepc
+    public synchronized CompletableFuture<ResponseEntity<?>> removeCity(String name, String state, String country)
         throws InterruptedException {
         ResponseEntity<?> responseEntity =
                 new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -97,14 +112,15 @@ public class DataService {
         // Check that the city exists.
         if (hasCity(city)) {
             // If another thread is modifying the data, wait.
-            if (writing) {
+            while (writing) {
                 wait();
             }
             // The city exits, remove it.
             deleting = true;
 
             // Try and find the city in the state.
-            for (Iterator<BasicCity> iterator = data.get(city.getCountry()).get(city.getState()).iterator(); iterator.hasNext();) {
+            for (Iterator<BasicCity> iterator = data.get(city.getCountry())
+                    .get(city.getState()).iterator(); iterator.hasNext();) {
                 BasicCity myCity = iterator.next();
                 if (myCity.getName().equals(city.getName())) {
                     // We found the city so remove it.
@@ -133,6 +149,13 @@ public class DataService {
         return CompletableFuture.completedFuture(responseEntity);
     }
 
+    /**
+     * Get the cities.
+     * @param country (optional) country to filter.
+     * @param state (optional) state to filter.
+     * @param date (optional) date to filter.
+     * @return response code 200 if success with JSON city data or 404 if no cities exist.
+     */
     @Async
     public synchronized CompletableFuture<ResponseEntity<?>> getCities(String country, String state, String date) {
         ResponseEntity<?> responseEntity =
@@ -154,7 +177,7 @@ public class DataService {
         } else {
             // Get all cities by country (and state).
             if (state == null && data.containsKey(country)) {
-                // No state so get all the states in this country.
+                // No user defined state so get all the states in this country.
                 for (Map.Entry<String, ArrayList<BasicCity>> stateData : data.get(country).entrySet()) {
                     // Add all the cities in every state.
                     for (BasicCity city : stateData.getValue()) {
@@ -179,11 +202,13 @@ public class DataService {
         Gson gson = new Gson();
         String sortedData;
 
+        // Decide if we will produce complex City objects or simplified BasicCity objects.
         if (country == null && state == null) {
             // We need to return the most complex data.
             ArrayList<City> cities = new ArrayList<>();
+            // Determine if we need to filter by date or if we can just return the data as is.
             if (!(date == null)) {
-                // Filter the cities by date.
+                // We need to filter the cities by date.
                 SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
                 Date maxDate;
                 try {
@@ -191,6 +216,7 @@ public class DataService {
                 } catch (ParseException e) {
                     throw new RuntimeException(e);
                 }
+                // Search through all the cities we collected.
                 while (!cityData.isEmpty()) {
                     // Remove the top city.
                     City city = cityData.poll();
@@ -207,7 +233,7 @@ public class DataService {
                     }
                 }
             } else {
-                // Don't filter the cities by date.
+                // Don't filter the cities by date, search through all the cities.
                 while (!cityData.isEmpty()) {
                     // Remove the top city.
                     City city = cityData.poll();
@@ -215,9 +241,10 @@ public class DataService {
                     cities.add(city);
             }
         }
+            // Convert the data to JSON format.
             sortedData = gson.toJson(new CityWrapper(cities));
     } else {
-            // We need to simplify our data
+            // We need to simplify our data.
             ArrayList<BasicCity> cities = new ArrayList<>();
             while (!cityData.isEmpty()) {
                 // Remove the top city.
@@ -227,6 +254,7 @@ public class DataService {
                 // Add the city.
                 cities.add(simplifiedCity);
             }
+            // Convert the data to JSON format.
             sortedData = gson.toJson(new CityWrapper(cities));
         }
 
@@ -245,6 +273,7 @@ public class DataService {
      * @return true if the city exists.
      */
     private synchronized boolean hasCity(City city) {
+        // Wait while other threads are modifying the data.
         while (writing || deleting) {
             try {
                 wait();
@@ -252,8 +281,6 @@ public class DataService {
                 throw new RuntimeException(e);
             }
         }
-
-        boolean cityFound = false;
 
         // Find the country.
         if (data.containsKey(city.getCountry())) {
@@ -264,13 +291,12 @@ public class DataService {
                 for (BasicCity storedCity : citiesInState) {
                     if (storedCity.getName().equals(city.getName())) {
                         // The city was found.
-                        cityFound = true;
-                        break; //TODO check this can be here!!!
+                        return true;
                     }
                 }
             }
         }
 
-        return cityFound;
+        return false;
     }
 }
