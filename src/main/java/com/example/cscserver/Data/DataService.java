@@ -70,7 +70,7 @@ public class DataService {
             writing = false;
             notifyAll();
 
-            responseEntity = ResponseEntity.status(HttpStatus.OK).body(null);
+            responseEntity = ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
 
 
         } else {
