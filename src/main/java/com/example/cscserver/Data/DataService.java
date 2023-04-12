@@ -3,6 +3,7 @@ package com.example.cscserver.Data;
 import com.example.cscserver.Model.BasicCity;
 import com.example.cscserver.Model.City;
 import com.example.cscserver.configuration.CityComparator;
+import com.example.cscserver.configuration.CityWrapper;
 import com.google.gson.Gson;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -207,7 +208,7 @@ public class DataService {
                     cities.add(city);
             }
         }
-            sortedData = gson.toJson(cities);
+            sortedData = gson.toJson(new CityWrapper(cities));
     } else {
             // We need to simplify our data
             ArrayList<BasicCity> cities = new ArrayList<>();
@@ -219,7 +220,7 @@ public class DataService {
                 // Add the city.
                 cities.add(simplifiedCity);
             }
-            sortedData = gson.toJson(cities);
+            sortedData = gson.toJson(new CityWrapper(cities));
         }
 
         // See if we have any data.
