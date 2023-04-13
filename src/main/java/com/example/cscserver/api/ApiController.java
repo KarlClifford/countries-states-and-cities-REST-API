@@ -53,6 +53,12 @@ public class ApiController {
             LoggerFactory.getLogger(ApiController.class);
 
     /**
+     * Determines whether a date is in the format yyyy-MM-dd (excluding 0000-00-00) or a 32-bit epoch.
+     */
+    private static final String VALID_DATE =
+            "^(?!0000-00-00)(\\d{4}-\\d{2}-\\d{2}|(19|20)\\d{8}|214748364[0-7]|-214748364[0-8])(?:Z|[+-]\\d{2}:\\d{2})?$";
+
+    /**
      * The service that handles CRUD operations on the server data.
      */
     private final DataService data = new DataService();
@@ -75,21 +81,33 @@ public class ApiController {
      */
     @PostMapping(value = "/city", consumes = {"application/json"})
     public ResponseEntity<?> addCity(@Valid @RequestBody City city) {
-
-        // Check the date the user has entered is valid.
-        if (!city.isDateValid()) {
-            // The date isn't valid display an error message.
-            ErrorMessage errorMessage = new ErrorMessage(HttpStatus.BAD_REQUEST.value(),
-                    "Date must be in the present or the past and in the format dd-MM-yyyy");
-            return new ResponseEntity<>(errorMessage.toJson(), HttpStatus.BAD_REQUEST);
-        }
-
-        // Try to add the city.
         ResponseEntity<?> response = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        try {
-            response = data.storeCity(city).get();
-        } catch (InterruptedException | ExecutionException e) {
-            LOG.error("Error adding city " + city.getName() + ": " + e);
+
+        /*
+         * Spring boot automatically passes values to the City object,
+         * we need to check that the date is valid.
+         */
+        if (city.getFoundingDate().matches(VALID_DATE)) {
+            // Check the date the user has entered is before the current date.
+            if (!city.isDateValid()) {
+                // The date isn't valid display an error message.
+                ErrorMessage errorMessage = new ErrorMessage(HttpStatus.BAD_REQUEST.value(),
+                        "Date must be in the present or the past and in the format dd-MM-yyyy");
+                return new ResponseEntity<>(errorMessage.toJson(), HttpStatus.BAD_REQUEST);
+            }
+
+            // Try to add the city.
+            try {
+                response = data.storeCity(city).get();
+            } catch (InterruptedException | ExecutionException e) {
+                LOG.error("Error adding city " + city.getName() + ": " + e);
+            }
+        } else {
+            // Date failed to parse, show error.
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Date must match format yyyy-MM-dd or epoch timestamp");
+            response = new ResponseEntity<>(error.toJson(), HttpStatus.BAD_REQUEST);
         }
 
         return response;
@@ -128,10 +146,20 @@ public class ApiController {
     public ResponseEntity<?> getCities(@QueryParam("dateFounded") String date) {
         // Try to get the cities.
         ResponseEntity<?> response = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        try {
-            response = data.getCities(null, null, date).get();
-        } catch (InterruptedException | ExecutionException e) {
-            LOG.error("Error getting all cities: " + e);
+        // Check for valid date.
+        if (date.matches(VALID_DATE)) {
+            // Try to get the cities.
+            try {
+                response = data.getCities(null, null, date).get();
+            } catch (InterruptedException | ExecutionException e) {
+                LOG.error("Error getting all cities: " + e);
+            }
+        } else {
+            // Not a valid date show error.
+            ErrorMessage error = new ErrorMessage(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Date must match format yyyy-MM-dd or epoch timestamp");
+            response = new ResponseEntity<>(error.toJson(), HttpStatus.BAD_REQUEST);
         }
 
         return response;

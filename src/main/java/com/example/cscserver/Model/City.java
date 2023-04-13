@@ -2,6 +2,7 @@ package com.example.cscserver.Model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -13,11 +14,17 @@ import java.time.format.DateTimeFormatter;
  * @version 1.0.0
  */
 public class City {
-    
+
     /**
      * Helps determine if a date is in epoch format or in date format.
      */
     private static final int MINIMUM_VIABLE_DATE_LENGTH = 4;
+
+    /**
+     * Determines whether a date is in the format yyyy-MM-dd (excluding 0000-00-00) or a 32-bit epoch.
+     */
+    private static final String VALID_DATE =
+            "^(?!0000-00-00)(\\d{4}-\\d{2}-\\d{2}|(19|20)\\d{8}|214748364[0-7]|-214748364[0-8])(?:Z|[+-]\\d{2}:\\d{2})?$";
     /**
      * The name of the city.
      */
@@ -44,9 +51,7 @@ public class City {
      */
     @JsonProperty("foundingDate")
     @NotBlank(message = "date founded is required")
-    //@Pattern(regexp =
-            //"^(-?[1-9]\\d{0,8}|0)$|^(?!0000)[1-9]\\d{3}[-/.](?:0[1-9]|1[0-2])[-/.](?:0[1-9]|[12]\\d|3[01])$",
-            //message = "date must match pattern yyyy-MM-dd or -99999 to 99999")
+    @Pattern(regexp = VALID_DATE, message = "date must be either yyyy-MM-dd or epoch timestamp")
     private String foundingDate;
 
     /**
@@ -65,11 +70,9 @@ public class City {
         this.name = name;
         this.state = state;
         this.country = country;
-        //this.foundingDate = foundingDate;
+        this.foundingDate = foundingDate;
         if (!foundingDate.isEmpty()) {
             this.formattedDate = parseDate(foundingDate);
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            this.foundingDate = this.formattedDate.format(formatter);
         }
     }
 
