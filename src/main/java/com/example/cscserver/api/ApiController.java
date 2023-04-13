@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -173,7 +176,7 @@ public class ApiController {
     }
 
     /**
-     * Builds json objects containing errors thrown by the server.
+     * Builds json objects containing constraint errors thrown by the server.
      * @param ex the constraint violations from the server.
      * @return 400 error response.
      */
@@ -204,15 +207,14 @@ public class ApiController {
 
         // Save the error message.
         errorMessages.add(new ErrorMessage(HttpStatus.BAD_REQUEST.value(),
-                "date must match pattern yyyy-MM-dd or -99999 to 99999"));
+                "Invalid Request Body"));
 
         Gson gson = new Gson();
         return ResponseEntity.badRequest().body(gson.toJson(new ErrorWrapper(errorMessages)));
     }
 
     /**
-     * Builds json objects containing errors thrown by the server,
-     * caused by dates that are out of range.
+     * Builds json objects containing method argument errors thrown by the server.
      * @param ex the constraint violations from the server.
      * @return 400 error response.
      */
@@ -221,9 +223,13 @@ public class ApiController {
     public ResponseEntity<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
         ArrayList<ErrorMessage> errorMessages = new ArrayList<>();
 
-        // Save the error message.
-        errorMessages.add(new ErrorMessage(HttpStatus.BAD_REQUEST.value(),
-                "date must match pattern yyyy-MM-dd or -99999 to 99999"));
+        BindingResult bindingResult = ex.getBindingResult();
+        List<FieldError> fieldErrors = bindingResult.getFieldErrors();
+
+        // Iterate through every error and save the message.
+        for (FieldError error : fieldErrors) {
+            errorMessages.add(new ErrorMessage(HttpStatus.BAD_REQUEST.value(), error.getDefaultMessage()));
+        }
 
         Gson gson = new Gson();
         return ResponseEntity.badRequest().body(gson.toJson(new ErrorWrapper(errorMessages)));
