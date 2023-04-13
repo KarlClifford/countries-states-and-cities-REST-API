@@ -13,6 +13,15 @@ import java.time.format.DateTimeFormatter;
  * @version 1.0.0
  */
 public class City {
+
+    /**
+     * Epoch date.
+     */
+    private static final int[] EPOCH_DATE = {1970, 1, 1};
+    /**
+     * Helps determine if a date is in epoch format or in date format.
+     */
+    private static final int MINIMUM_VIABLE_DATE_LENGTH = 4;
     /**
      * The name of the city.
      */
@@ -40,8 +49,8 @@ public class City {
     @JsonProperty("foundingDate")
     @NotBlank(message = "date founded is required")
     @Pattern(regexp =
-            "^(-?[1-9]\\d{0,8}|0)$|^(?:(?!0000)[1-9]\\d{3})[-/.](?:0[1-9]|1[0-2])[-/.](?:0[1-9]|[12]\\d|3[01])$",
-            message = "date must match pattern yyyy-MM-dd or -99999 to 99999") //TODO: invert dd-MM-yyyy to yyyy-MM-dd
+            "^(-?[1-9]\\d{0,8}|0)$|^(?!0000)[1-9]\\d{3}[-/.](?:0[1-9]|1[0-2])[-/.](?:0[1-9]|[12]\\d|3[01])$",
+            message = "date must match pattern yyyy-MM-dd or -99999 to 99999")
     private String foundingDate;
 
     /**
@@ -129,11 +138,10 @@ public class City {
     public static LocalDate parseDate(String date) {
         LocalDate formattedDate;
         // Determine if the date is in a date format or integer format.
-        int minimumViableDate = 4;
-        if ((date.charAt(0) == '-') || (date.length() <= minimumViableDate) || date.matches("^\\d{5}.*")) {
+        if ((date.charAt(0) == '-') || (date.length() <= MINIMUM_VIABLE_DATE_LENGTH) || date.matches("^\\d{5}.*")) {
             // Date is in integer format, convert using the days since epoch.
             long daysSinceEpoch = Long.parseLong(date);
-            LocalDate epochDate = LocalDate.of(1970, 1, 1);
+            LocalDate epochDate = LocalDate.of(EPOCH_DATE[0], EPOCH_DATE[1], EPOCH_DATE[2]);
             formattedDate = epochDate.plusDays(daysSinceEpoch);
         } else {
             // Date is in a date format, split it to convert to a LocalDate.
