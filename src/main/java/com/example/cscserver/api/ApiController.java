@@ -53,10 +53,11 @@ public class ApiController {
             LoggerFactory.getLogger(ApiController.class);
 
     /**
-     * Determines whether a date is in the format yyyy-MM-dd (excluding 0000-00-00) or a 32-bit epoch.
+     * Determines whether a date is in the format yyyy-MM-dd (excluding 0000-00-00) or a 32-bit epoch timestamp.
      */
     private static final String VALID_DATE =
-            "^(?!0000-00-00)(\\d{4}-\\d{2}-\\d{2}|(19|20)\\d{8}|214748364[0-7]|-214748364[0-8])(?:Z|[+-]\\d{2}:\\d{2})?$";
+            "^(?!0000-00-00)(\\d{4}-\\d{2}-\\d{2}|(19|20)"
+                  +  "\\d{8}|214748364[0-7]|-214748364[0-8])(?:Z|[+-]\\d{2}:\\d{2})?$";
 
     /**
      * The service that handles CRUD operations on the server data.
@@ -144,22 +145,26 @@ public class ApiController {
      */
     @GetMapping(value = "/city", produces = {"application/json"})
     public ResponseEntity<?> getCities(@QueryParam("dateFounded") String date) {
-        // Try to get the cities.
-        ResponseEntity<?> response = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        // Check for valid date.
-        if (date != null && date.matches(VALID_DATE)) {
+        ResponseEntity<?> response = null;
+
+        // Date is optional so check if the user has included it.
+        if (date != null) {
+            // Check if the date is valid.
+            try {
+                City.parseDate(date);
+            } catch (Exception e) {
+                response = new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+        }
+
+        // Check we haven't encountered an error.
+        if (response == null) {
             // Try to get the cities.
             try {
                 response = data.getCities(null, null, date).get();
             } catch (InterruptedException | ExecutionException e) {
-                LOG.error("Error getting all cities: " + e);
+                response = new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-        } else {
-            // Not a valid date show error.
-            ErrorMessage error = new ErrorMessage(
-                    HttpStatus.BAD_REQUEST.value(),
-                    "Date must match format yyyy-MM-dd or epoch timestamp");
-            response = new ResponseEntity<>(error.toJson(), HttpStatus.BAD_REQUEST);
         }
 
         return response;
@@ -225,12 +230,11 @@ public class ApiController {
     /**
      * Builds json objects containing errors thrown by the server,
      * caused by malformed dates.
-     * @param ex the constraint violations from the server.
      * @return 400 error response.
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<?> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+    public ResponseEntity<?> handleHttpMessageNotReadableException() {
         ArrayList<ErrorMessage> errorMessages = new ArrayList<>();
 
         // Save the error message.

@@ -21,10 +21,11 @@ public class City {
     private static final int MINIMUM_VIABLE_DATE_LENGTH = 4;
 
     /**
-     * Determines whether a date is in the format yyyy-MM-dd (excluding 0000-00-00) or a 32-bit epoch.
+     * Determines whether a date is in the format yyyy-MM-dd (excluding 0000-00-00) or a 32-bit epoch timestamp.
      */
     private static final String VALID_DATE =
-            "^(?!0000-00-00)(\\d{4}-\\d{2}-\\d{2}|(19|20)\\d{8}|214748364[0-7]|-214748364[0-8])(?:Z|[+-]\\d{2}:\\d{2})?$";
+            "^(?!0000-00-00)(\\d{4}-\\d{2}-\\d{2}|(19|20)"
+                   + "\\d{8}|214748364[0-7]|-214748364[0-8])(?:Z|[+-]\\d{2}:\\d{2})?$";
     /**
      * The name of the city.
      */
@@ -70,9 +71,10 @@ public class City {
         this.name = name;
         this.state = state;
         this.country = country;
-        this.foundingDate = foundingDate;
-        if (!foundingDate.isEmpty()) {
+        if (foundingDate != null) {
             this.formattedDate = parseDate(foundingDate);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            this.foundingDate = this.formattedDate.format(formatter);
         }
     }
 
