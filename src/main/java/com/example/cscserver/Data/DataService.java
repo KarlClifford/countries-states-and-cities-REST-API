@@ -12,13 +12,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.PriorityQueue;
 import java.util.Map;
-import java.util.Date;
+import java.util.PriorityQueue;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -211,26 +209,15 @@ public class DataService {
             // Determine if we need to filter by date or if we can just return the data as is.
             if (!(date == null)) {
                 // We need to filter the cities by date.
-                SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
-                Date maxDate = new Date();
-                try {
-                    maxDate = formatter.parse(date);
-                } catch (ParseException e) {
-                    LOG.error("Date couldn't be parsed: " + e);
-                }
+                LocalDate maxDate = City.parseDate(date);
                 // Search through all the cities we collected.
                 while (!cityData.isEmpty()) {
                     // Remove the top city.
                     City city = cityData.poll();
                     // Store this cities date.
-                    Date cityDate = new Date();
-                    try {
-                        cityDate = formatter.parse(city.getFoundingDate());
-                    } catch (ParseException e) {
-                        LOG.error("Date couldn't be parsed: " + e);
-                    }
+                    LocalDate cityDate = city.getDate();
                     // Add all the cities from newest to oldest with dates less the maxDate.
-                    if (cityDate.before(maxDate)) {
+                    if (cityDate.isBefore(maxDate)) {
                         cities.add(city);
                     }
                 }

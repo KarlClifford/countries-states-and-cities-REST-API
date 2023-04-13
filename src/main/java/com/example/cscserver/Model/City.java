@@ -4,9 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Represents a City object used for JSON serialisation.
@@ -40,9 +39,15 @@ public class City {
      */
     @JsonProperty("foundingDate")
     @NotBlank(message = "date founded is required")
-    @Pattern(regexp = "(0?[1-9]|[12][0-9]|3[01])[- /.](0?[1-9]|1[012])[- /.](1\\d{3}|2[01]\\d\\d)",
-            message = "date must match pattern dd-MM-yyyy")
+    @Pattern(regexp =
+            "^(-?[1-9]\\d{0,8}|0)$|^(?:(?!0000)[1-9]\\d{3})[-/.](?:0[1-9]|1[0-2])[-/.](?:0[1-9]|[12]\\d|3[01])$",
+            message = "date must match pattern yyyy-MM-dd or -99999 to 99999") //TODO: invert dd-MM-yyyy to yyyy-MM-dd
     private String foundingDate;
+
+    /**
+     * Stores the date in the correct format.
+     */
+    private transient LocalDate formattedDate;
 
     /**
      * The constructor of the City class.
@@ -55,7 +60,12 @@ public class City {
         this.name = name;
         this.state = state;
         this.country = country;
-        this.foundingDate = foundingDate;
+        //this.foundingDate = foundingDate;
+        if (!foundingDate.isEmpty()) {
+            this.formattedDate = parseDate(foundingDate);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            this.foundingDate = this.formattedDate.format(formatter);
+        }
     }
 
     /**
@@ -91,20 +101,47 @@ public class City {
     }
 
     /**
+     * The date this city was founded in, with the correct format.
+     * @return the date the city was founded in.
+     */
+    public LocalDate getDate() {
+        return formattedDate;
+    }
+
+    /**
      * Determined whether an entered date is valid or not.
      * @return true if the date is in the present or the past.
      */
     public boolean isDateValid() {
-        // Set up a date formatter, so we can convert the string representation to an actual Date object.
-        SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
         boolean isValid;
-        try {
-            // Check if the date is before or after the present date.
-            isValid = new Date().after(format.parse(foundingDate));
-        } catch (ParseException e) {
-            // The date is malformed.
-            isValid = false;
-        }
+        // Check if the date is before or after the present date.
+        LocalDate dateNow = LocalDate.now();
+        isValid = dateNow.isAfter(formattedDate);
         return isValid;
+    }
+
+    /**
+     * Converts a string representation of a date in the format -999999999 to
+     * 999999999 or a valid date format dd-MM-yyyy to a LocalDate.
+     * @param date the date to convert.
+     * @return the date.
+     */
+    public static LocalDate parseDate(String date) {
+        LocalDate formattedDate;
+        // Determine if the date is in a date format or integer format.
+        int minimumViableDate = 4;
+        if ((date.charAt(0) == '-') || (date.length() <= minimumViableDate) || date.matches("^\\d{5}.*")) {
+            // Date is in integer format, convert using the days since epoch.
+            long daysSinceEpoch = Long.parseLong(date);
+            LocalDate epochDate = LocalDate.of(1970, 1, 1);
+            formattedDate = epochDate.plusDays(daysSinceEpoch);
+        } else {
+            // Date is in a date format, split it to convert to a LocalDate.
+            String[] splitDate = date.replaceAll("[-/.]", " ").split(" ");
+            formattedDate = LocalDate.of(Integer.parseInt(splitDate[0]),
+                    Integer.parseInt(splitDate[1]),
+                    Integer.parseInt(splitDate[2]));
+        }
+        return formattedDate;
     }
 }

@@ -5,10 +5,8 @@ import com.example.cscserver.api.ApiController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.Comparator;
-import java.util.Date;
 
 /**
  * This class is used to compare City objects by date.
@@ -30,32 +28,10 @@ public class CityComparator implements Comparator<City> {
      */
     @Override
     public int compare(City o1, City o2) {
-        Date date1 = new Date();
-        Date date2 = new Date();
-
-        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
-
         // Assign the dates from the city to Date types, so we can compare.
-        try {
-            date1 = formatter.parse(o1.getFoundingDate());
-            date2 = formatter.parse(o2.getFoundingDate());
-        } catch (ParseException e) {
-            LOG.error("Error comparing dates: " + e);
-        }
+        LocalDate date1 = o1.getDate();
+        LocalDate date2 = o2.getDate();
 
-        int comparatorValue;
-
-        if (date1.before(date2)) {
-            // City o1 is older.
-            comparatorValue = 1;
-        } else if (date1.after(date2)) {
-            // City o1 is newer.
-            comparatorValue = -1;
-        } else {
-            // There is no difference in dates.
-            comparatorValue = 0;
-        }
-
-        return comparatorValue;
+        return date1.compareTo(date2);
     }
 }
