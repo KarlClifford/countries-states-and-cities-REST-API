@@ -147,7 +147,7 @@ public class ApiController {
         // Try to get the cities.
         ResponseEntity<?> response = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         // Check for valid date.
-        if (date.matches(VALID_DATE)) {
+        if (date != null && date.matches(VALID_DATE)) {
             // Try to get the cities.
             try {
                 response = data.getCities(null, null, date).get();
